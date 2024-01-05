@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Product;
 use App\Repository\ProductRepository;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use Symfony\Component\Routing\Annotation\Route;
@@ -21,6 +22,14 @@ class ProductController extends AbstractFOSRestController
         $products = $this->productRepository->findAll();
 
         $view = $this->view($products, Response::HTTP_OK);
+
+        return $this->handleView($view);
+    }
+
+    #[Rest\Get('/products/{id}', name: 'get_product', requirements: ["id" => "\d+"])]
+    public function getProduct(Product $product): Response
+    {
+        $view = $this->view($product, Response::HTTP_OK);
 
         return $this->handleView($view);
     }
