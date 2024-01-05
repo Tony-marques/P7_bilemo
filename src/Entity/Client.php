@@ -6,10 +6,13 @@ use App\Repository\ClientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\CustomTrait\TimestampableTrait;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 class Client
 {
+  use TimestampableTrait;
+
   #[ORM\Column()]
   #[ORM\GeneratedValue()]
   #[ORM\Id]

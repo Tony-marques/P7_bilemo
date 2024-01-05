@@ -4,10 +4,13 @@ namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\CustomTrait\TimestampableTrait;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User
 {
+  use TimestampableTrait;
+
   #[ORM\Id]
   #[ORM\GeneratedValue]
   #[ORM\Column]

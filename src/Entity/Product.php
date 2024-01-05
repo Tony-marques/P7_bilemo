@@ -4,10 +4,13 @@ namespace App\Entity;
 
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\CustomTrait\TimestampableTrait;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
+    use TimestampableTrait;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -20,7 +23,7 @@ class Product
     private ?string $brand = null;
 
     #[ORM\Column(length: 255)]
-    private string $description = null;
+    private ?string $description = null;
 
     #[ORM\Column()]
     private ?int $price = null;
