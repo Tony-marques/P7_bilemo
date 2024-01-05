@@ -10,7 +10,7 @@ trait TimestampableTrait
   #[ORM\Column()]
   private ?DateTimeImmutable $createdAt = null;
 
-  #[ORM\Column()]
+  #[ORM\Column(nullable: true)]
   private ?DateTimeImmutable $updatedAt = null;
 
   public function getCreatedAt(): DateTimeImmutable
