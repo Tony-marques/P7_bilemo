@@ -7,9 +7,11 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\CustomTrait\TimestampableTrait;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
-class Client
+class Client implements UserInterface, PasswordAuthenticatedUserInterface
 {
   use TimestampableTrait;
 
@@ -36,6 +38,17 @@ class Client
   public function __construct()
   {
     $this->users = new ArrayCollection();
+  }
+
+  public function getUserIdentifier(): string
+  {
+    return (string) $this->email;
+  }
+
+  public function eraseCredentials(): void
+  {
+    // If you store any temporary, sensitive data on the user, clear it here
+    // $this->plainPassword = null;
   }
   /**
    * Get the value of id
