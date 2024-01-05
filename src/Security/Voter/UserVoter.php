@@ -32,14 +32,13 @@ class UserVoter extends Voter
         switch ($attribute) {
             case self::READ:
             case self::EDIT:
+            case self::DELETE:
                 // logic to determine if the user can EDIT
                 // return true or false
                 return $subject->getClient() === $user;
                 break;
-            case self::DELETE:
                 // logic to determine if the user can VIEW
                 // return true or false
-                break;
         }
 
         return false;
