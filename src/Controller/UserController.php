@@ -10,6 +10,8 @@ use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route(path: "/api", name: "api_")]
 class UserController extends AbstractFOSRestController
@@ -31,19 +33,21 @@ class UserController extends AbstractFOSRestController
     }
 
     #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
-    public function getOneUser(User $user, Security $security): Response
+    public function getOneUser(string $id, UserRepository $userRepository): Response
     {
-        if ($user->getClient()->getId() === $security->getUser()->getId()) {
-            $view = $this->view($user, Response::HTTP_OK);
-            return $this->handleView($view);
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            throw $this->createNotFoundException("L'utilisateur n'existe pas");
         }
 
-        $errors = [
-            "errorMessage" => "Vous n'êtes pas le propriétaire de cet utilisateur"
-        ];
+        $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        $view = $this->view($errors, Response::HTTP_FORBIDDEN);
-
+        // if ($user->getClient()->getId() === $security->getUser()->getId()) {
+        $view = $this->view($user, Response::HTTP_OK);
         return $this->handleView($view);
+        // }
+
+
     }
 }
