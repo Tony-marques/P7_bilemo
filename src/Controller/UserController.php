@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Client;
+use App\Entity\User;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
 use Symfony\Component\Routing\Annotation\Route;
@@ -26,6 +26,23 @@ class UserController extends AbstractFOSRestController
         $users = $clientRepository->findOneBy(["id" => $clientId])->getUsers();
 
         $view = $this->view($users, Response::HTTP_OK);
+
+        return $this->handleView($view);
+    }
+
+    #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
+    public function getOneUser(User $user, Security $security): Response
+    {
+        if ($user->getClient()->getId() === $security->getUser()->getId()) {
+            $view = $this->view($user, Response::HTTP_OK);
+            return $this->handleView($view);
+        }
+
+        $errors = [
+            "errorMessage" => "Vous n'êtes pas le propriétaire de cet utilisateur"
+        ];
+
+        $view = $this->view($errors, Response::HTTP_FORBIDDEN);
 
         return $this->handleView($view);
     }
