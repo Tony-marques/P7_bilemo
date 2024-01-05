@@ -154,4 +154,34 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
   {
     return $this->getUserIdentifier();
   }
+
+  /**
+   * @return Collection<int, User>
+   */
+  public function getUsers(): Collection
+  {
+    return $this->users;
+  }
+
+  public function addUser(User $user): static
+  {
+    if (!$this->users->contains($user)) {
+      $this->users->add($user);
+      $user->setClient($this);
+    }
+
+    return $this;
+  }
+
+  public function removeUser(User $user): static
+  {
+    if ($this->users->removeElement($user)) {
+      // set the owning side to null (unless already changed)
+      if ($user->getClient() === $this) {
+        $user->setClient(null);
+      }
+    }
+
+    return $this;
+  }
 }
