@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\ClientRepository;
 use App\Repository\UserRepository;
 use DateTimeImmutable;
@@ -23,12 +24,11 @@ class UserController extends AbstractFOSRestController
     #[Rest\Get('/users', name: 'get_users')]
     public function getUsers(Security $security, ClientRepository $clientRepository): Response
     {
-        $clientId = $security->getUser()->getId();
+        $client = $security->getUser();
 
-        $users = $clientRepository->findOneBy(["id" => $clientId])->getUsers();
+        $users = $clientRepository->findOneBy(["id" => $client])->getUsers();
 
         $view = $this->view($users, Response::HTTP_OK);
-
         return $this->handleView($view);
     }
 
@@ -43,10 +43,8 @@ class UserController extends AbstractFOSRestController
 
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        // if ($user->getClient()->getId() === $security->getUser()->getId()) {
         $view = $this->view($user, Response::HTTP_OK);
         return $this->handleView($view);
-        // }
     }
 
     #[Rest\Delete('/users/{id}', name: 'delete_user', requirements: ["id" => "\d+"])]
@@ -93,6 +91,31 @@ class UserController extends AbstractFOSRestController
 
         $message = [
             "success" => "Utilisateur modifié avec succès"
+        ];
+
+        $view = $this->view($message, Response::HTTP_CREATED);
+        return $this->handleView($view);
+    }
+
+    #[Rest\Post('/users', name: 'create_user')]
+    public function createUser(Security $security, EntityManagerInterface $em, Request $request): Response
+    {
+        $client = $security->getUser();
+
+        $content = $request->toArray();
+        $email = $content["email"];
+
+        $user = new User();
+
+        $user->setEmail($email)
+            ->setCreatedAt(new DateTimeImmutable())
+            ->setClient($client);
+
+        $em->persist($user);
+        $em->flush();
+
+        $message = [
+            "success" => "Utilisateur créé avec succès"
         ];
 
         $view = $this->view($message, Response::HTTP_CREATED);
