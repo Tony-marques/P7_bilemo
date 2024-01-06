@@ -5,7 +5,10 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\CustomTrait\TimestampableTrait;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
+#[UniqueEntity(["email"], "Cette adresse e-mail est déjà utilisé", groups: ["user:create", "user:update"])]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User
 {
@@ -17,6 +20,7 @@ class User
   private ?int $id = null;
 
   #[ORM\Column(length: 180, unique: true)]
+  #[Assert\Email(message: "Adresse e-mail non valide", groups: ["user:create", "user:update"])]
   private ?string $email = null;
 
   #[ORM\ManyToOne(inversedBy: 'users')]

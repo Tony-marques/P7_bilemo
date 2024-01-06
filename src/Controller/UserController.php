@@ -13,6 +13,7 @@ use FOS\RestBundle\Controller\Annotations as Rest;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(path: "/api", name: "api_")]
 class UserController extends AbstractFOSRestController
@@ -70,7 +71,7 @@ class UserController extends AbstractFOSRestController
     }
 
     #[Rest\Put('/users/{id}', name: 'update_user', requirements: ["id" => "\d+"])]
-    public function updateUser(string $id, UserRepository $userRepository, EntityManagerInterface $em, Request $request): Response
+    public function updateUser(string $id, UserRepository $userRepository, EntityManagerInterface $em, Request $request, ValidatorInterface $validator): Response
     {
         $user = $userRepository->find($id);
 
@@ -86,6 +87,13 @@ class UserController extends AbstractFOSRestController
         $user->setEmail($email)
             ->setUpdatedAt(new DateTimeImmutable());
 
+        $errors = $validator->validate($user, null, groups: ["user:update"]);
+
+        if ($errors->count() > 0) {
+            $view = $this->view($errors, Response::HTTP_BAD_REQUEST);
+            return $this->handleView($view);
+        }
+
         $em->persist($user);
         $em->flush();
 
@@ -98,7 +106,7 @@ class UserController extends AbstractFOSRestController
     }
 
     #[Rest\Post('/users', name: 'create_user')]
-    public function createUser(Security $security, EntityManagerInterface $em, Request $request): Response
+    public function createUser(Security $security, EntityManagerInterface $em, Request $request, ValidatorInterface $validator): Response
     {
         $client = $security->getUser();
 
@@ -110,6 +118,12 @@ class UserController extends AbstractFOSRestController
         $user->setEmail($email)
             ->setCreatedAt(new DateTimeImmutable())
             ->setClient($client);
+
+        $errors = $validator->validate($user, null, groups: ["user:create"]);
+        if ($errors->count() > 0) {
+            $view = $this->view($errors, Response::HTTP_BAD_REQUEST);
+            return $this->handleView($view);
+        }
 
         $em->persist($user);
         $em->flush();
