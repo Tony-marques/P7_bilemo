@@ -7,6 +7,8 @@ use App\Repository\ProductRepository;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use Symfony\Component\Routing\Annotation\Route;
 use FOS\RestBundle\Controller\Annotations as Rest;
+use Knp\Component\Pager\PaginatorInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 #[Route(path: "/api", name: "api_")]
@@ -17,11 +19,15 @@ class ProductController extends AbstractFOSRestController
     }
 
     #[Rest\Get('/products', name: 'get_products')]
-    public function getProducts(): Response
+    public function getProducts(PaginatorInterface $paginator, Request $request): Response
     {
         $products = $this->productRepository->findAll();
 
-        $view = $this->view($products, Response::HTTP_OK);
+        $page= $request->query->get("page", 1);
+
+        $pagination = $paginator->paginate($products, $page, 2);
+
+        $view = $this->view($pagination, Response::HTTP_OK);
 
         return $this->handleView($view);
     }

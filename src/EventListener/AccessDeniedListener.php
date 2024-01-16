@@ -11,22 +11,23 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-class AccessDeniedListener 
+class AccessDeniedListener
 {
     #[AsEventListener(event: KernelEvents::EXCEPTION, priority: 2)]
     public function onKernelException(ExceptionEvent $event): void
     {
         $exception = $event->getThrowable();
-
         if (!$exception instanceof AccessDeniedException) {
             return;
         }
 
+        // \dd($exception);
+
         $errors = [
-            "message" => $exception->getMessage()
+            "message" => $exception->getMessage(),
+            "code" => $exception->getCode()
         ];
 
         $event->setResponse(new JsonResponse($errors, Response::HTTP_FORBIDDEN));
-
     }
 }
