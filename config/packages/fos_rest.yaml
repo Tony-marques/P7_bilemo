@@ -1,12 +1,34 @@
 # Read the documentation: https://fosrestbundle.readthedocs.io/en/3.x/
+# fos_rest:
+#    view:
+#       formats: { json: true, xml: false, rss: false }
+#       view_response_listener: true
+#       mime_types:
+#          json:
+#             [
+#                "application/json",
+#                "application/json;version=1.0",
+#                "application/json;version=2.0",
+#             ]
+#    serializer:
+#       serialize_null: true
+#    body_converter:
+#       enabled: true
+#    format_listener:
+#       rules:
+#          - { path: "^/api", priorities: ["json"], fallback_format: "json" }
+
+
 fos_rest:
+    body_listener:
+        enabled: true
+        default_format: json
+    param_fetcher_listener:
+        enabled: true
+        force: true
     view:
-      view_response_listener: true
+        view_response_listener:
+            enabled: true
     format_listener:
-      rules:
-         - {
-              path: ^/api,
-              prefer_extension: true,
-              fallback_format: json,
-              priorities: [json, html],
-           }
+        rules:
+            - { path: ^/api, prefer_extension: true, fallback_format: json, priorities: [ json ] }

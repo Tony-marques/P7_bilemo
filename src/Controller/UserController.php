@@ -11,10 +11,10 @@ use Symfony\Component\Routing\Annotation\Route;
 use FOS\RestBundle\Controller\AbstractFOSRestController;
 use FOS\RestBundle\Controller\Annotations as Rest;
 use Knp\Component\Pager\PaginatorInterface;
+use FOS\RestBundle\Controller\Annotations\View;
+use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route(path: "/api", name: "api_")]
@@ -25,8 +25,8 @@ class UserController extends AbstractFOSRestController
     }
 
     #[Rest\Get('/users', name: 'get_users', )]
-    #[IsGranted("IS_AUTHENTICATED_FULLY", null, "test")]
-    public function getUsers(Security $security, ClientRepository $clientRepository, PaginatorInterface $paginator, Request $request): Response
+    #[View(serializerGroups: ["user:read"])]
+    public function getUsers(Security $security, ClientRepository $clientRepository, PaginatorInterface $paginator, Request $request): PaginationInterface
     {
         $client = $security->getUser();
 
@@ -35,12 +35,14 @@ class UserController extends AbstractFOSRestController
         $page = $request->query->get("page", 1);
         $pagination = $paginator->paginate($users, $page, 2);
 
-        $view = $this->view($pagination, Response::HTTP_OK);
-        return $this->handleView($view);
+        return $pagination;
+        // $view = $this->view($pagination, Response::HTTP_OK);
+        // return $this->handleView($view);
     }
 
     #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
-    public function getOneUser(string $id, UserRepository $userRepository): Response
+    #[View(serializerGroups: ["user:read"])]
+    public function getOneUser(string $id, UserRepository $userRepository): User
     {
         $user = $userRepository->find($id);
 
@@ -50,12 +52,15 @@ class UserController extends AbstractFOSRestController
 
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        $view = $this->view($user, Response::HTTP_OK);
-        return $this->handleView($view);
+        // $view = $this->view($user, Response::HTTP_OK);
+        // return $this->handleView($view);
+
+        return $user;
     }
 
     #[Rest\Delete('/users/{id}', name: 'delete_user', requirements: ["id" => "\d+"])]
-    public function deleteUser(string $id, UserRepository $userRepository, EntityManagerInterface $em): Response
+    #[View()]
+    public function deleteUser(string $id, UserRepository $userRepository, EntityManagerInterface $em)
     {
         $user = $userRepository->find($id);
 
@@ -72,12 +77,14 @@ class UserController extends AbstractFOSRestController
             "success" => "Utilisateur supprimé avec succès"
         ];
 
-        $view = $this->view($message, Response::HTTP_OK);
-        return $this->handleView($view);
+        return $message;
+        // $view = $this->view($message, Response::HTTP_OK);
+        // return $this->handleView($view);
     }
 
     #[Rest\Put('/users/{id}', name: 'update_user', requirements: ["id" => "\d+"])]
-    public function updateUser(string $id, UserRepository $userRepository, EntityManagerInterface $em, Request $request, ValidatorInterface $validator): Response
+    #[View()]
+    public function updateUser(string $id, UserRepository $userRepository, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
         $user = $userRepository->find($id);
 
@@ -96,8 +103,18 @@ class UserController extends AbstractFOSRestController
         $errors = $validator->validate($user, null, groups: ["user:update"]);
 
         if ($errors->count() > 0) {
-            $view = $this->view($errors, Response::HTTP_BAD_REQUEST);
-            return $this->handleView($view);
+            $errorsList = [];
+            foreach($errors as $error) {
+                $errorsList[] = [
+                    "errorMessage" => [
+                        $error->getMessage(),
+                    ]
+                ];
+            }
+
+            return $errorsList;
+            // $view = $this->view($errorsList, Response::HTTP_BAD_REQUEST);
+            // return $this->handleView($view);
         }
 
         $em->persist($user);
@@ -107,16 +124,24 @@ class UserController extends AbstractFOSRestController
             "success" => "Utilisateur modifié avec succès"
         ];
 
-        $view = $this->view($message, Response::HTTP_CREATED);
-        return $this->handleView($view);
+        return $message;
+
+        // $view = $this->view($message, Response::HTTP_CREATED);
+        // return $this->handleView($view);
     }
 
     #[Rest\Post('/users', name: 'create_user')]
-    public function createUser(Security $security, EntityManagerInterface $em, Request $request, ValidatorInterface $validator): Response
+    #[View()]
+    public function createUser(Security $security, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
         $client = $security->getUser();
 
         $content = $request->toArray();
+
+        if(!isset($content["email"])) {
+            return ["message" => "Merci de renseigner un e-mail"];
+        }
+
         $email = $content["email"];
 
         $user = new User();
@@ -127,9 +152,20 @@ class UserController extends AbstractFOSRestController
 
         $errors = $validator->validate($user, null, groups: ["user:create"]);
         if ($errors->count() > 0) {
-            $view = $this->view($errors, Response::HTTP_BAD_REQUEST);
-            return $this->handleView($view);
+            $errorsList = [];
+            foreach($errors as $error) {
+                $errorsList[] = [
+                    "errorMessage" => [
+                        $error->getMessage(),
+                    ]
+                ];
+            }
+
+            return $errorsList;
+            // $view = $this->view($errorsList, Response::HTTP_BAD_REQUEST);
+            // return $this->handleView($view);
         }
+        
 
         $em->persist($user);
         $em->flush();
@@ -138,7 +174,9 @@ class UserController extends AbstractFOSRestController
             "success" => "Utilisateur créé avec succès"
         ];
 
-        $view = $this->view($message, Response::HTTP_CREATED);
-        return $this->handleView($view);
+        return $message;
+
+        // $view = $this->view($message, Response::HTTP_CREATED);
+        // return $this->handleView($view);
     }
 }

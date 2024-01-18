@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Entity\CustomTrait\TimestampableTrait;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 class Client implements UserInterface, PasswordAuthenticatedUserInterface
@@ -33,6 +34,7 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
   private array $roles = [];
 
   #[ORM\OneToMany(mappedBy: "Client", targetEntity: User::class, orphanRemoval: true)]
+  #[Groups(["user:rdddead"])]
   private Collection $users;
 
   public function __construct()
