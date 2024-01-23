@@ -15,10 +15,16 @@ use Knp\Component\Pager\Pagination\PaginationInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 #[Route(path: "/api", name: "api_")]
 class UserController extends AbstractFOSRestController
 {
+    public function __construct(private TagAwareCacheInterface $cache)
+    {
+    }
+
     #[Rest\Get('/users', name: 'get_users', )]
     #[View(serializerGroups: ["user:read"])]
     public function getUsers(Security $security, PaginatorInterface $paginator, Request $request): PaginationInterface
@@ -29,7 +35,14 @@ class UserController extends AbstractFOSRestController
         $page = $request->query->get("page", 1);
         $pagination = $paginator->paginate($client->getUsers()->toArray(), $page, 2);
 
-        return $pagination;
+        $cache = $this->cache->get("users . $page", function (ItemInterface $item) use ($pagination) {
+            $item->expiresAfter(3600);
+            $item->tag('users');
+
+            return $pagination;
+        });
+
+        return $cache;
     }
 
     #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
@@ -38,7 +51,14 @@ class UserController extends AbstractFOSRestController
     {
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        return $user;
+        $cache = $this->cache->get("user . {$user->getId()}", function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(3600);
+            $item->tag("user");
+
+            return $user;
+        });
+
+        return $cache;
     }
 
     #[Rest\Delete('/users/{id}', name: 'delete_user', requirements: ["id" => "\d+"])]
@@ -46,6 +66,8 @@ class UserController extends AbstractFOSRestController
     public function deleteUser(User $user, EntityManagerInterface $em)
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
+
+        $this->cache->invalidateTags(["users", 'user']);
 
         $em->remove($user);
         $em->flush();
@@ -62,6 +84,8 @@ class UserController extends AbstractFOSRestController
     public function updateUser(User $user, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
+
+        $this->cache->invalidateTags(["users", 'user']);
 
         $content = $request->toArray();
         
@@ -101,6 +125,8 @@ class UserController extends AbstractFOSRestController
     #[View()]
     public function createUser(Security $security, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
+        $this->cache->invalidateTags(["users"]);
+
         $client = $security->getUser();
 
         $content = $request->toArray();
