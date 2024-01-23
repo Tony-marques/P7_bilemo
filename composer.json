@@ -14,7 +14,9 @@
         "friendsofsymfony/rest-bundle": "^3.6",
         "knplabs/knp-paginator-bundle": "^6.3",
         "lexik/jwt-authentication-bundle": "^2.18",
+        "nelmio/api-doc-bundle": "^4.18",
         "sensio/framework-extra-bundle": "*",
+        "symfony/asset": "6.4.*",
         "symfony/cache": "6.4.*",
         "symfony/console": "6.4.*",
         "symfony/dotenv": "6.4.*",
@@ -22,8 +24,11 @@
         "symfony/framework-bundle": "6.4.*",
         "symfony/runtime": "6.4.*",
         "symfony/serializer": "6.4.*",
+        "symfony/twig-bundle": "6.4.*",
         "symfony/validator": "6.4.*",
-        "symfony/yaml": "6.4.*"
+        "symfony/yaml": "6.4.*",
+        "twig/extra-bundle": "^2.12|^3.0",
+        "twig/twig": "^2.12|^3.0"
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "*",
