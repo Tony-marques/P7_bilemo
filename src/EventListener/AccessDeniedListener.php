@@ -1,10 +1,8 @@
 <?php
 
-// src/EventListener/AccessDeniedListener.php
 namespace App\EventListener;
 
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -20,8 +18,6 @@ class AccessDeniedListener
         if (!$exception instanceof AccessDeniedException) {
             return;
         }
-
-        // \dd($exception);
 
         $errors = [
             "message" => $exception->getMessage(),

@@ -14,16 +14,16 @@ final class NotFoundListener
     #[AsEventListener(event: KernelEvents::EXCEPTION)]
     public function onKernelException(ExceptionEvent $event): void
     {
-        $exception = $event->getThrowable();
+        // $exception = $event->getThrowable();
 
-        if (!$exception instanceof NotFoundHttpException) {
-            return;
-        }
+        // if (!$exception instanceof NotFoundHttpException) {
+        //     return;
+        // }
 
-        $errors = [
-            "message" => $exception->getMessage()
-        ];
+        // $errors = [
+        //     "message" => $exception->getMessage()
+        // ];
 
-        $event->setResponse(new JsonResponse($errors, Response::HTTP_NOT_FOUND));
+        // $event->setResponse(new JsonResponse($errors, Response::HTTP_NOT_FOUND));
     }
 }

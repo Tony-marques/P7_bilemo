@@ -3,8 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Repository\ClientRepository;
-use App\Repository\UserRepository;
+use App\Exception\ErrorException;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Annotation\Route;
@@ -20,54 +19,32 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 #[Route(path: "/api", name: "api_")]
 class UserController extends AbstractFOSRestController
 {
-    public function __construct(private UserRepository $userRepository)
-    {
-    }
-
     #[Rest\Get('/users', name: 'get_users', )]
     #[View(serializerGroups: ["user:read"])]
-    public function getUsers(Security $security, ClientRepository $clientRepository, PaginatorInterface $paginator, Request $request): PaginationInterface
+    public function getUsers(Security $security, PaginatorInterface $paginator, Request $request): PaginationInterface
     {
+        /** @var Client $client */
         $client = $security->getUser();
 
-        $users = $clientRepository->findOneBy(["id" => $client])->getUsers();
-
         $page = $request->query->get("page", 1);
-        $pagination = $paginator->paginate($users, $page, 2);
+        $pagination = $paginator->paginate($client->getUsers()->toArray(), $page, 2);
 
         return $pagination;
-        // $view = $this->view($pagination, Response::HTTP_OK);
-        // return $this->handleView($view);
     }
 
     #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
     #[View(serializerGroups: ["user:read"])]
-    public function getOneUser(string $id, UserRepository $userRepository): User
+    public function getOneUser(User $user): User
     {
-        $user = $userRepository->find($id);
-
-        if (!$user) {
-            throw $this->createNotFoundException("L'utilisateur n'existe pas");
-        }
-
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
-
-        // $view = $this->view($user, Response::HTTP_OK);
-        // return $this->handleView($view);
 
         return $user;
     }
 
     #[Rest\Delete('/users/{id}', name: 'delete_user', requirements: ["id" => "\d+"])]
     #[View()]
-    public function deleteUser(string $id, UserRepository $userRepository, EntityManagerInterface $em)
+    public function deleteUser(User $user, EntityManagerInterface $em)
     {
-        $user = $userRepository->find($id);
-
-        if (!$user) {
-            throw $this->createNotFoundException("L'utilisateur n'existe pas");
-        }
-
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
         $em->remove($user);
@@ -78,25 +55,22 @@ class UserController extends AbstractFOSRestController
         ];
 
         return $message;
-        // $view = $this->view($message, Response::HTTP_OK);
-        // return $this->handleView($view);
     }
 
     #[Rest\Put('/users/{id}', name: 'update_user', requirements: ["id" => "\d+"])]
     #[View()]
-    public function updateUser(string $id, UserRepository $userRepository, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
+    public function updateUser(User $user, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
-        $user = $userRepository->find($id);
-
-        if (!$user) {
-            throw $this->createNotFoundException("L'utilisateur n'existe pas");
-        }
-
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
         $content = $request->toArray();
-        $email = $content["email"];
+        
+        if(!isset($content["email"])) {
+            throw new ErrorException("Merci de renseigner un e-mail");
+        }
 
+        $email = $content["email"];
+        
         $user->setEmail($email)
             ->setUpdatedAt(new DateTimeImmutable());
 
@@ -105,16 +79,12 @@ class UserController extends AbstractFOSRestController
         if ($errors->count() > 0) {
             $errorsList = [];
             foreach($errors as $error) {
-                $errorsList[] = [
-                    "errorMessage" => [
-                        $error->getMessage(),
-                    ]
-                ];
+                $errorsList[] = ["message" => $error->getMessage()];
             }
 
-            return $errorsList;
-            // $view = $this->view($errorsList, Response::HTTP_BAD_REQUEST);
-            // return $this->handleView($view);
+            foreach($errorsList as $key => $value) {
+                throw new ErrorException($errorsList[$key]["message"]);
+            }
         }
 
         $em->persist($user);
@@ -125,9 +95,6 @@ class UserController extends AbstractFOSRestController
         ];
 
         return $message;
-
-        // $view = $this->view($message, Response::HTTP_CREATED);
-        // return $this->handleView($view);
     }
 
     #[Rest\Post('/users', name: 'create_user')]
@@ -139,7 +106,7 @@ class UserController extends AbstractFOSRestController
         $content = $request->toArray();
 
         if(!isset($content["email"])) {
-            return ["message" => "Merci de renseigner un e-mail"];
+            throw new ErrorException("Merci de renseigner un e-mail");
         }
 
         $email = $content["email"];
@@ -154,19 +121,13 @@ class UserController extends AbstractFOSRestController
         if ($errors->count() > 0) {
             $errorsList = [];
             foreach($errors as $error) {
-                $errorsList[] = [
-                    "errorMessage" => [
-                        $error->getMessage(),
-                    ]
-                ];
+                $errorsList[] = ["message" => $error->getMessage()];
             }
-
-            return $errorsList;
-            // $view = $this->view($errorsList, Response::HTTP_BAD_REQUEST);
-            // return $this->handleView($view);
+            foreach($errorsList as $key => $value) {
+                throw new ErrorException($errorsList[$key]["message"]);
+            }
         }
         
-
         $em->persist($user);
         $em->flush();
 
@@ -175,8 +136,5 @@ class UserController extends AbstractFOSRestController
         ];
 
         return $message;
-
-        // $view = $this->view($message, Response::HTTP_CREATED);
-        // return $this->handleView($view);
     }
 }
