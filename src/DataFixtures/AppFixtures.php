@@ -47,7 +47,7 @@ class AppFixtures extends Fixture
             $users[] = $user;
         }
 
-        // Products
+        // Phones
         for ($i = 0; $i < 20; $i++) {
             $product = new Product();
             $product->setBrand('Brand ' . $i)
