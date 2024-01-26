@@ -17,8 +17,16 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use OpenApi\Attributes as OA;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Route(path: "/api", name: "api_")]
+#[OA\Tag("user")]
+#[OA\Response(
+    response: 401,
+    description: "Token invalide"
+)]
 class UserController extends AbstractFOSRestController
 {
     public function __construct(private TagAwareCacheInterface $cache)
@@ -27,6 +35,20 @@ class UserController extends AbstractFOSRestController
 
     #[Rest\Get('/users', name: 'get_users', )]
     #[View(serializerGroups: ["user:read"])]
+    #[OA\Parameter(
+        name:"page",
+        in:"query",
+        description:"Page que l'on veut récupérer",
+        schema: new OA\Schema(type: 'string')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: "Récupération de la ressource"
+    )]
+    #[OA\Response(
+        response: 500,
+        description: "Problème serveur"
+    )]
     public function getUsers(Security $security, PaginatorInterface $paginator, Request $request): PaginationInterface
     {
         /** @var Client $client */
@@ -47,6 +69,18 @@ class UserController extends AbstractFOSRestController
 
     #[Rest\Get('/users/{id}', name: 'get_user', requirements: ["id" => "\d+"])]
     #[View(serializerGroups: ["user:read"])]
+    #[OA\Response(
+        response: 200,
+        description: "Récupération de la ressource"
+    )]
+    #[OA\Response(
+        response: 403,
+        description: "Accès non autorisé"
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "La ressource n'existe pas"
+    )]
     public function getOneUser(User $user): User
     {
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
@@ -63,6 +97,18 @@ class UserController extends AbstractFOSRestController
 
     #[Rest\Delete('/users/{id}', name: 'delete_user', requirements: ["id" => "\d+"])]
     #[View()]
+    #[OA\Response(
+        response: 204,
+        description: "Ressource supprimée"
+    )]
+    #[OA\Response(
+        response: 403,
+        description: "Accès non autorisé"
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "La ressource n'existe pas"
+    )]
     public function deleteUser(User $user, EntityManagerInterface $em)
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
@@ -72,15 +118,34 @@ class UserController extends AbstractFOSRestController
         $em->remove($user);
         $em->flush();
 
-        $message = [
-            "success" => "Utilisateur supprimé avec succès"
-        ];
-
-        return $message;
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
     #[Rest\Put('/users/{id}', name: 'update_user', requirements: ["id" => "\d+"])]
     #[View()]
+    #[OA\Response(
+        response: 200,
+        description: "La ressource a été mise à jour"
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Bad request"
+    )]
+    #[OA\Response(
+        response: 403,
+        description: "Accès non autorisé"
+    )]
+    #[OA\Response(
+        response: 404,
+        description: "La ressource n'existe pas"
+    )]
+    #[OA\RequestBody(
+        required:true,
+        description: "Modification d'un utilisateur",
+        content: [new OA\MediaType(mediaType: "application/json", schema: new OA\Schema(properties: [
+            new OA\Property(property: "email", type: "string")
+        ]))]
+    )]
     public function updateUser(User $user, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
@@ -123,6 +188,21 @@ class UserController extends AbstractFOSRestController
 
     #[Rest\Post('/users', name: 'create_user')]
     #[View()]
+    #[OA\Response(
+        response: 201,
+        description: "La ressource a été créée",
+    )]
+    #[OA\Response(
+        response: 400,
+        description: "Bad request"
+    )]
+    #[OA\RequestBody(
+        required:true,
+        description: "Création d'un utilisateur",
+        content: [new OA\MediaType(mediaType: "application/json", schema: new OA\Schema(properties: [
+            new OA\Property(property: "email", type: "string")
+        ]))]
+    )]
     public function createUser(Security $security, EntityManagerInterface $em, Request $request, ValidatorInterface $validator)
     {
         $this->cache->invalidateTags(["users"]);
@@ -161,6 +241,6 @@ class UserController extends AbstractFOSRestController
             "success" => "Utilisateur créé avec succès"
         ];
 
-        return $message;
+        return new JsonResponse($message, 201);
     }
 }
