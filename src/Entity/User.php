@@ -8,8 +8,10 @@ use App\Entity\CustomTrait\TimestampableTrait;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
+use OpenApi\Attributes as OA;
 
 #[UniqueEntity(["email"], "Cette adresse e-mail est déjà utilisé", groups: ["user:create", "user:update"])]
+#[OA\Schema]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User
 {

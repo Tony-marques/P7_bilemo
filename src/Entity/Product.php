@@ -5,7 +5,10 @@ namespace App\Entity;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\CustomTrait\TimestampableTrait;
+use Symfony\Component\Serializer\Attribute\Groups;
+use OpenApi\Attributes as OA;
 
+// #[OA\Schema]
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
@@ -14,18 +17,23 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["product:read"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["product:read"])]
     private ?string $model = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["product:read"])]
     private ?string $brand = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["product:read"])]
     private ?string $description = null;
 
     #[ORM\Column()]
+    #[Groups(["product:read"])]
     private ?int $price = null;
 
     public function getId(): ?int
