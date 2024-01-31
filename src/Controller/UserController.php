@@ -12,12 +12,16 @@ use FOS\RestBundle\Controller\Annotations as Rest;
 use Knp\Component\Pager\PaginatorInterface;
 use FOS\RestBundle\Controller\Annotations\View;
 use Knp\Component\Pager\Pagination\PaginationInterface;
+use Nelmio\ApiDocBundle\Annotation\Model;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use OpenApi\Attributes as OA;
+use OpenApi\Attributes\Items;
+use OpenApi\Attributes\MediaType;
+use OpenApi\Attributes\Schema;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -26,6 +30,14 @@ use Symfony\Component\HttpFoundation\Response;
 #[OA\Response(
     response: 401,
     description: "Token invalide"
+)]
+#[OA\Response(
+    response: 403,
+    description: "Accès non autorisé"
+)]
+#[OA\Response(
+    response: 500,
+    description: "Problème serveur"
 )]
 class UserController extends AbstractFOSRestController
 {
@@ -43,11 +55,14 @@ class UserController extends AbstractFOSRestController
     )]
     #[OA\Response(
         response: 200,
-        description: "Récupération de la ressource"
-    )]
-    #[OA\Response(
-        response: 500,
-        description: "Problème serveur"
+        description: "Récupération de la ressource",
+        content: new MediaType(
+            mediaType: "application/json",
+            schema: new Schema(
+                type: "array",
+                items: new Items(ref: "#/components/schemas/User")
+            )
+        )
     )]
     public function getUsers(Security $security, PaginatorInterface $paginator, Request $request): PaginationInterface
     {
@@ -71,11 +86,8 @@ class UserController extends AbstractFOSRestController
     #[View(serializerGroups: ["user:read"])]
     #[OA\Response(
         response: 200,
-        description: "Récupération de la ressource"
-    )]
-    #[OA\Response(
-        response: 403,
-        description: "Accès non autorisé"
+        description: "Récupération de la ressource",
+        content: new Model(type: User::class, groups: ['user:read'], )
     )]
     #[OA\Response(
         response: 404,
@@ -85,9 +97,8 @@ class UserController extends AbstractFOSRestController
     {
         $this->denyAccessUnlessGranted("USER_READ", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        $cache = $this->cache->get("user . {$user->getId()}", function (ItemInterface $item) use ($user) {
+        $cache = $this->cache->get("user{$user->getId()}", function (ItemInterface $item) use ($user) {
             $item->expiresAfter(3600);
-            $item->tag("user");
 
             return $user;
         });
@@ -102,10 +113,6 @@ class UserController extends AbstractFOSRestController
         description: "Ressource supprimée"
     )]
     #[OA\Response(
-        response: 403,
-        description: "Accès non autorisé"
-    )]
-    #[OA\Response(
         response: 404,
         description: "La ressource n'existe pas"
     )]
@@ -113,7 +120,8 @@ class UserController extends AbstractFOSRestController
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        $this->cache->invalidateTags(["users", 'user']);
+        $this->cache->invalidateTags(["users"]);
+        $this->cache->delete("user" . $user->getId());
 
         $em->remove($user);
         $em->flush();
@@ -132,10 +140,6 @@ class UserController extends AbstractFOSRestController
         description: "Bad request"
     )]
     #[OA\Response(
-        response: 403,
-        description: "Accès non autorisé"
-    )]
-    #[OA\Response(
         response: 404,
         description: "La ressource n'existe pas"
     )]
@@ -150,7 +154,8 @@ class UserController extends AbstractFOSRestController
     {
         $this->denyAccessUnlessGranted("USER_DELETE", $user, "Vous n'êtes pas propriétaire de cet utilisateur");
 
-        $this->cache->invalidateTags(["users", 'user']);
+        $this->cache->invalidateTags(["users"]);
+        $this->cache->delete("user{$user->getId()}");
 
         $content = $request->toArray();
         
