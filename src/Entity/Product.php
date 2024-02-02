@@ -6,9 +6,7 @@ use App\Repository\ProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 use App\Entity\CustomTrait\TimestampableTrait;
 use Symfony\Component\Serializer\Attribute\Groups;
-use OpenApi\Attributes as OA;
 
-// #[OA\Schema]
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
